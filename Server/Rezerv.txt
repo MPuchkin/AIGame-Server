@@ -1,3 +1,4 @@
+#pragma once
 // Server.cpp : Defines the entry point for the console application.
 // Для работы необходимо добавить ws2_32.lib
 
@@ -20,8 +21,8 @@ const u_short PORT_IN = 11001;   // Порт для соединений
 DWORD WINAPI WorkWithClient(LPVOID client_socket);
 //  DWORD WINAPI waitForClientsMonitors(LPVOID monitor_socket);
 
-// критическая секция
-CRITICAL_SECTION list_ops;
+// критические секции - две шт.
+//CRITICAL_SECTION cs_in, cs_out;
 //  список активных игроков
 std::list<Gamer> socks_out;
 
@@ -140,9 +141,10 @@ int main(int argc, char* argv[])
 	// функции accept необходимо передать размер структуры
 	int client_addr_size=sizeof(client_addr);
 	// цикл извлечения запросов на подключение из очереди
-	InitializeCriticalSection(&list_ops);
+	InitializeCriticalSection(&cs_in);
+	InitializeCriticalSection(&cs_out);
+	//  Запускаем процесс подключения мониторов
 
-	//  Запускаем процесс подбора оппонентов
 	DWORD thID;
 	CreateThread(NULL,NULL,waitForClientsMonitors,&client_socket,NULL,&thID);
 
