@@ -1,6 +1,0 @@
-F:\Programming\AIGameProject\ReleaseOutput\GameAlgs.xml
-F:\Programming\AIGameProject\ReleaseOutput\GameAlgs.dll
-F:\Programming\AIGameProject\ReleaseOutput\GameAlgs.pdb
-F:\Programming\AIGameProject\SolverLib\obj\Release\SolverLib.csproj.CoreCompileInputs.cache
-F:\Programming\AIGameProject\SolverLib\obj\Release\GameAlgs.dll
-F:\Programming\AIGameProject\SolverLib\obj\Release\GameAlgs.pdb
