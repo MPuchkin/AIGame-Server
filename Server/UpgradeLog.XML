@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="SimplServ">
+</Property><Property Name="Solution File" Value="D:\Work\SimplServ\SimplServ.sln">
+</Property><Property Name="User Options File" Value="D:\Work\SimplServ\SimplServ.suo">
+</Property><Property Name="Date" Value="17 октября 2013 г.">
+</Property><Property Name="Time" Value="20:22">
+</Property></Properties><Event ErrorLevel="0" Project="" Source="SimplServ.sln" Description="File successfully backed up as D:\Work\SimplServ\SimplServ.sln.old">
+</Event><Event ErrorLevel="0" Project="" Source="SimplServ.suo" Description="File successfully backed up as D:\Work\SimplServ\SimplServ.suo.old">
+</Event><Event ErrorLevel="0" Project="SimplServ" Source="SimplServ.vcproj" Description="Converting project file 'D:\Work\SimplServ\SimplServ.vcproj'.">
+</Event><Event ErrorLevel="1" Project="SimplServ" Source="SimplServ.vcproj" Description="VCWebServiceProxyGeneratorTool is no longer supported. The tool has been removed from your project settings.">
+</Event><Event ErrorLevel="0" Project="SimplServ" Source="SimplServ.vcproj" Description="Done converting to new project file 'D:\Work\SimplServ\SimplServ.vcxproj'.">
+</Event><Event ErrorLevel="3" Project="SimplServ" Source="SimplServ.vcproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="" Source="SimplServ.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="SimplServ.sln" Description="Converted">
+</Event></UpgradeLog>

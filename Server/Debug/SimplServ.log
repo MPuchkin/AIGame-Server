@@ -1,0 +1,53 @@
+﻿     0>C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(36,5): warning MSB4211: The property "IntermediateOutputPath" is being set to a value for the first time, but it was already consumed at "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets (35,5)".
+     0>C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(337,5): warning MSB4211: The property "CleanFile" is being set to a value for the first time, but it was already consumed at "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets (35,5)".
+Build started 22.10.2020 20:12:16.
+Logging verbosity is set to: Normal.     1>Project "F:\Programming\AIGameProject\Server\SimplServ.vcxproj" on node 2 (Rebuild target(s)).
+     1>_PrepareForClean:
+         Deleting file "Debug\SimplServ.tlog\SimplServ.lastbuildstate".
+       PrepareForBuild:
+         Creating directory "F:\Programming\AIGameProject\Debug\".
+       InitializeBuildStatus:
+         Creating "Debug\SimplServ.tlog\unsuccessfulbuild" because "AlwaysCreate" was specified.
+       VcpkgTripletSelection:
+         Using triplet "x86-windows" from "D:\vcpkg-master\installed\x86-windows\"
+       ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.27.29110\bin\HostX86\x86\CL.exe /c /I"D:\vcpkg-master\installed\x86-windows\include" /ZI /nologo /W3 /WX- /diagnostics:column /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\" /Fd"Debug\vc142.pdb" /Gd /TP /analyze- /FC /errorReport:prompt SimplServ.cpp stdafx.cpp
+     1>cl : command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+         stdafx.cpp
+         SimplServ.cpp
+     1>F:\Programming\AIGameProject\Server\SimplServ.cpp(154,7): warning C4996: 'gethostbyaddr': Use getnameinfo() or GetNameInfoW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+     1>F:\Programming\AIGameProject\Server\SimplServ.cpp(156,77): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+         Generating Code...
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.27.29110\bin\HostX86\x86\link.exe /ERRORREPORT:PROMPT /OUT:"F:\Programming\AIGameProject\Debug\SimplServ.exe" /INCREMENTAL /NOLOGO /LIBPATH:"D:\vcpkg-master\installed\x86-windows\debug\lib" /LIBPATH:"D:\vcpkg-master\installed\x86-windows\debug\lib\manual-link" ws2_32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib "D:\vcpkg-master\installed\x86-windows\debug\lib\*.lib" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"F:\Programming\AIGameProject\Debug\SimplServ.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"F:\Programming\AIGameProject\Debug\SimplServ.lib" /MACHINE:X86 /SAFESEH Debug\SimplServ.obj
+         Debug\stdafx.obj
+     1>SimplServ.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
+         SimplServ.vcxproj -> F:\Programming\AIGameProject\Debug\SimplServ.exe
+       AppLocalFromInstalled:
+         C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -noprofile -File "D:\vcpkg-master\scripts\buildsystems\msbuild\applocal.ps1" "F:\Programming\AIGameProject\Debug\SimplServ.exe" "D:\vcpkg-master\installed\x86-windows\debug\bin" "Debug\SimplServ.tlog\SimplServ.write.1u.tlog" "Debug\vcpkg.applocal.log"
+       FinalizeBuildStatus:
+         Deleting file "Debug\SimplServ.tlog\unsuccessfulbuild".
+         Touching "Debug\SimplServ.tlog\SimplServ.lastbuildstate".
+     1>Done Building Project "F:\Programming\AIGameProject\Server\SimplServ.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(36,5): warning MSB4211: The property "IntermediateOutputPath" is being set to a value for the first time, but it was already consumed at "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets (35,5)".
+         C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\Microsoft.Common.CurrentVersion.targets(337,5): warning MSB4211: The property "CleanFile" is being set to a value for the first time, but it was already consumed at "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets (35,5)".
+
+
+       "F:\Programming\AIGameProject\Server\SimplServ.vcxproj" (Rebuild target) (1) ->
+       (ClCompile target) -> 
+         cl : command line warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+         F:\Programming\AIGameProject\Server\SimplServ.cpp(154,7): warning C4996: 'gethostbyaddr': Use getnameinfo() or GetNameInfoW() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+         F:\Programming\AIGameProject\Server\SimplServ.cpp(156,77): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+
+
+       "F:\Programming\AIGameProject\Server\SimplServ.vcxproj" (Rebuild target) (1) ->
+       (Link target) -> 
+         SimplServ.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/SAFESEH' specification
+
+    6 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.67

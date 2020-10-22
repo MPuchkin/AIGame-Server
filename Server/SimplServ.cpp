@@ -1,0 +1,252 @@
+// Server.cpp : Defines the entry point for the console application.
+// Для работы необходимо добавить ws2_32.lib
+
+
+// Пример простого TCP эхо-сервера
+#include <stdio.h>
+#include <winsock2.h> // Wincosk2.h должен быть раньше windows!
+#include <windows.h>
+#include <locale>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+
+const u_short PORT_IN = 11000;   // Порт для "входящих" соединений
+const u_short PORT_OUT = 11001;  // Порт для "исходящих"
+
+// Прототип функции, обслуживающий подключившихся пользователей
+DWORD WINAPI WorkWithClient(LPVOID client_socket);
+DWORD WINAPI waitForClientsMonitors(LPVOID monitor_socket);
+
+// критические секции - две шт.
+CRITICAL_SECTION cs_in, cs_out;
+//  список активных сокетов
+std::vector<SOCKET> socks_out;
+
+/// Добавление сокета к списку входящих соединений
+void addSocket(SOCKET & pSock, CRITICAL_SECTION & cs, std::vector<SOCKET> & socks) {
+	//  вход
+	EnterCriticalSection(&cs);
+	//	добавление сокета
+	socks.push_back(pSock);
+	//  выход
+	LeaveCriticalSection(&cs);
+	return;
+}
+
+/// Удаление сокета из списка входящих соединений
+void removeSocket(SOCKET * pSock, CRITICAL_SECTION & cs, std::vector<SOCKET *> & socks) {
+	//  вход
+	EnterCriticalSection(&cs);
+	//	удаление сокета
+	std::vector<SOCKET *>::iterator it=find(socks.begin(),socks.end(),pSock);
+	if(it != socks.end())
+		socks.erase(it);
+	//  выход
+	LeaveCriticalSection(&cs);
+	return;
+}
+
+///  Рассылка сообщений всем подключенным клиентам
+void sendToAll(const char *buf, int len, int flags) {
+	//  Рассылка сообщений всем подключенным клиентам
+	EnterCriticalSection(&cs_out);
+	std::cout << "Пересылка сообщения длиной " << len << " байт." << std::endl;
+	//std::cout << "Размер вектора сокетов до отправки : " << socks_out.size() << std::endl;
+	
+	std::vector<SOCKET> tmp;
+	tmp.reserve(socks_out.size());
+	for(std::vector<SOCKET>::iterator it = socks_out.begin(); it!=socks_out.end();++it)
+		if (send(*it, buf, len, flags) != SOCKET_ERROR)
+			tmp.push_back(*it);
+	//  Освобождение критической секции
+	socks_out.swap(tmp);
+	std::cout << "Отправлено сообщение " << socks_out.size() << " клиентам"<< std::endl;
+	//std::cout << "Размер вектора сокетов после отправки : " << socks_out.size() << std::endl;
+	LeaveCriticalSection(&cs_out);
+	return;
+}
+
+// глобальная переменная – количество активных пользователей
+int nclients = 0;
+
+///  Вывод информации о количестве пользователей
+void printInfo() {
+	std::cout << "Пользователей онлайн : " << nclients << std::endl;
+}
+
+int main(int argc, char* argv[])
+{
+	setlocale(LC_ALL,".1251");
+
+	char buff[1024]; // Буфер для различных нужд
+	std::cout << "TCP SERVER DEMO\n";
+	// Шаг 1 - Инициализация Библиотеки Сокетов
+	// Т. к. возвращенная функцией информация не используется
+	// ей передается указатель на рабочий буфер, преобразуемый к указателю
+	// на структуру WSADATA.
+	// Такой прием позволяет сэкономить одну переменную, однако, буфер
+	// должен быть не менее полкилобайта размером (структура WSADATA
+	// занимает 400 байт)
+	if (WSAStartup(0x0202,(WSADATA *) &buff[0])) {
+		// Ошибка!
+		std::cout << "Ошибка WSAStartup " << WSAGetLastError() << " \n";
+		return -1;
+	}
+
+	// Шаг 2 - создание сокета
+	SOCKET mysocket;
+	// AF_INET - сокет Интернета
+	// SOCK_STREAM - потоковый сокет (с установкой соединения)
+	// 0 - по умолчанию выбирается TCP протокол
+	if ((mysocket=socket(AF_INET,SOCK_STREAM,0))<0) {
+		// Ошибка!
+		std::cout << "Ошибка создания сокета " << WSAGetLastError() << " \n";
+		WSACleanup(); // Деиницилизация библиотеки Winsock
+		return -1;
+	}
+
+	// Шаг 3 связывание сокета с локальным адресом
+	sockaddr_in local_addr;
+	local_addr.sin_family=AF_INET;
+	local_addr.sin_port=htons(PORT_IN); // не забываем о сетевом порядке!!!
+	local_addr.sin_addr.s_addr=0; // сервер принимаем подключения
+	// на все свои IP-адреса
+	// вызываем bind для связывания
+	if (bind(mysocket,(sockaddr *) &local_addr, sizeof(local_addr))) {
+		// Ошибка
+		std::cout << "Ошибка инициализации слушающего сокета " << WSAGetLastError() << " \n";
+		closesocket(mysocket); // закрываем сокет!
+		WSACleanup();
+		return -1;
+	}
+
+	// Шаг 4 ожидание подключений
+	// размер очереди – 0x100
+	if (listen(mysocket, 0x100)) {
+		// Ошибка
+		std:: cout << "Ошибка включения слушающего сокета " << WSAGetLastError() << " \n";
+		closesocket(mysocket);
+		WSACleanup();
+		return -1;
+	}
+
+	std::cout << "Ожидание подключений...\n";
+	// Шаг 5 извлекаем сообщение из очереди
+	SOCKET client_socket; // сокет для клиента
+	sockaddr_in client_addr; // адрес клиента (заполняется системой)
+	// функции accept необходимо передать размер структуры
+	int client_addr_size=sizeof(client_addr);
+	// цикл извлечения запросов на подключение из очереди
+	InitializeCriticalSection(&cs_in);
+	InitializeCriticalSection(&cs_out);
+	//  Запускаем процесс подключения мониторов
+
+	DWORD thID;
+	CreateThread(NULL,NULL,waitForClientsMonitors,&client_socket,NULL,&thID);
+
+	//  Ожидаем входящих соединений
+	while((client_socket=accept(mysocket, (sockaddr *) &client_addr, &client_addr_size)))
+	{
+		nclients++; // увеличиваем счетчик подключившихся клиентов
+		// пытаемся получить имя хоста
+		HOSTENT *hst;
+		hst=gethostbyaddr((char *) &client_addr.sin_addr.s_addr,4,AF_INET);
+		// вывод сведений о клиенте
+		printf("+%s [%s] новое соединение!\n",(hst)?hst->h_name:"",inet_ntoa(client_addr.sin_addr));
+		printInfo();
+			// Вызов нового потока для обслужвания клиента
+			// Да, для этого рекомендуется использовать _beginthreadex
+			// но, поскольку никаких вызов функций стандартной Си библиотеки
+			// поток не делает, можно обойтись и CreateThread
+		DWORD thID;
+		CreateThread(NULL,NULL,WorkWithClient,&client_socket,NULL,&thID);
+	}
+	//  удаляем критическую секцию
+	DeleteCriticalSection(&cs_in);
+	DeleteCriticalSection(&cs_out);
+	return 0;
+}
+
+//---------------------------------------------------------------------------------------------------------------
+// Эта функция работает в отдельном потоке
+// и обсуживает очередного подключившегося клиента независимо от остальных
+DWORD WINAPI waitForClientsMonitors(LPVOID monitor_socket)
+{
+	SOCKET outSocket;
+	// AF_INET - сокет Интернета
+	// SOCK_STREAM - потоковый сокет (с установкой соединения)
+	// 0 - по умолчанию выбирается TCP протокол
+	if ((outSocket=socket(AF_INET,SOCK_STREAM,0))<0) {
+		// Ошибка!
+		std::cout << "Error socket " << WSAGetLastError() << " \n";
+		WSACleanup(); // Деиницилизация библиотеки Winsock
+		return -1;
+	}
+
+	// Шаг 3 связывание сокета с локальным адресом
+	sockaddr_in local_addr;
+	local_addr.sin_family=AF_INET;
+	local_addr.sin_port=htons(PORT_OUT); // не забываем о сетевом порядке!!!
+	local_addr.sin_addr.s_addr=0; // сервер принимаем подключения
+	// на все свои IP-адреса
+	// вызываем bind для связывания
+	if (bind(outSocket,(sockaddr *) &local_addr, sizeof(local_addr))) {
+		// Ошибка
+		std::cout << "Не могу привязать сокет для исходящих : " << WSAGetLastError() << " \n";
+		closesocket(outSocket); // закрываем сокет!
+		WSACleanup();
+		throw("Output socket bind error!");
+	}
+
+	// Шаг 4 ожидание подключений
+	// размер очереди – 0x100
+	if (listen(outSocket, 0x100)) {
+		// Ошибка
+		std:: cout << "Ошибка при попытке открыть сокет для исходящих соединений " << WSAGetLastError() << " \n";
+		closesocket(outSocket);
+		WSACleanup();
+		throw("Output socket listen error!");
+	}
+
+	std::cout << "Ожидание подключений мониторов...\n";
+	// Шаг 5 извлекаем сообщение из очереди
+	SOCKET client_socket; // сокет для клиента
+	sockaddr_in client_addr; // адрес клиента (заполняется системой)
+	// функции accept необходимо передать размер структуры
+	int client_addr_size=sizeof(client_addr);
+	// цикл извлечения запросов на подключение из очереди
+	while((client_socket=accept(outSocket, (sockaddr *) &client_addr, &client_addr_size))) {
+		//  Необходимо внести сокет в список сокетов
+		addSocket(client_socket,cs_out,socks_out);
+		std::cout << "Подключен новый слушающий сокет\n";
+		std::cout << "Количество мониторов онлайн : " << socks_out.size() << std::endl;
+	}
+	return 0;
+}
+//---------------------------------------------------------------------------------------------------------------
+// Эта функция работает в отдельном потоке
+// и обсуживает очередного подключившегося клиента независимо от остальных
+DWORD WINAPI WorkWithClient(LPVOID client_socket)
+{
+	SOCKET my_sock;
+	my_sock=((SOCKET *) client_socket)[0];
+
+	char buff[20*1024];
+
+	// цикл эхо-сервера: прием строки от клиента и возвращение ее клиенту
+	int bytes_recv;
+	while((bytes_recv=recv(my_sock,&buff[0],sizeof(buff),0)) && bytes_recv !=SOCKET_ERROR) {
+		//  получены данные - надо обрабатывать, переслать всем клиентам
+		sendToAll(&buff[0],bytes_recv,0);
+	}
+
+	// если мы здесь, то произошел выход из цикла по причине
+	// возращения функцией recv ошибки – соединение с клиентом разорвано
+	nclients--; // уменьшаем счетчик активных клиентов
+	printf("-отключение\n"); 
+	printInfo();
+		// закрываем сокет
+	closesocket(my_sock);
+	return 0;
+}

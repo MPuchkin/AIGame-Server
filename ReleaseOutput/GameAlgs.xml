@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>GameAlgs</name>
+    </assembly>
+    <members>
+        <member name="T:GameAlgs.Helper">
+            <summary>
+            Вспомогательный класс, для обращения к нативной dll
+            </summary>
+        </member>
+        <member name="T:GameAlgs.Solver">
+            <summary>
+            Основной класс - "решатель" задачки и выдача ответа
+            </summary>
+        </member>
+        <member name="M:GameAlgs.Solver.solve(System.String,System.Int32)">
+            <summary>
+            Решение состояния и предложение хода
+            </summary>
+            <param name="State">Строка, представляющая игровое поле</param>
+            <param name="depth">Глубина поиска</param>
+        </member>
+    </members>
+</doc>
