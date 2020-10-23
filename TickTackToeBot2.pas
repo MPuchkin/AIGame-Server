@@ -1,7 +1,7 @@
-﻿uses GraphABC;
+﻿uses GraphABC, TCPUnit;
   
   const N = 6;          //  размер поля. 
-  const cellSize = 150; //  размер клетки 
+  const cellSize = 100; //  размер клетки 
   const border = 5;     //  величина отступа от края в пикселах
   const winLine = 4;
 
@@ -12,6 +12,8 @@ var field : array [1..N, 1..N] of integer;
     gameState : GameStateEnum;
     
     botName : string;
+    score : integer;
+var Streamer : StreamDirector := nil;
     
 
 //  Рисование нолика в заданной клетке
@@ -19,7 +21,7 @@ var field : array [1..N, 1..N] of integer;
 //  col - столбец, нумерация слева направо
 procedure DrawNolik(row,col : integer);
 begin
-  Pen.Width := 3;
+  Pen.Width := 5;
   Pen.Color := Color.Red;
   var y := (row-1)*cellSize + cellSize div 2;
   var x := (col-1)*cellSize + cellSize div 2;
@@ -31,7 +33,7 @@ end;
 //  col - столбец, нумерация слева направо
 procedure DrawKrestik(row,col : integer);
 begin
-  Pen.Width := 3;
+  Pen.Width := 5;
   Pen.Color := Color.Blue;
   var d := cellSize - 2*border;
   var y := (row-1)*cellSize + border;
@@ -51,14 +53,18 @@ begin
   Pen.Color := Color.Gray;
   for var i:=1 to N-1 do
     begin
-      Line(border,cellSize*i,Window.Width-border,cellSize*i);
-      Line(cellSize*i,border,cellSize*i,Window.Height-border);
+      Line(border,cellSize*i,border + cellSize*N,cellSize*i);
+      Line(cellSize*i,border,cellSize*i,border + cellSize*N);
     end;
+  Line(border,cellSize*N+border,border + cellSize*N,cellSize*N+border);    
+  
   //  Рисуем крестики и нолики там, где они есть
   for var i:=1 to N do
     for var j:=1 to N do
       if field[i,j]=1 then DrawKrestik(i,j)
       else if field[i,j]=2 then DrawNolik(i,j);
+  Font.Size := 36;
+  TextOut(50,cellSize*N + 50,botName + ' : ' + score.ToString);
 end;
 
 //  Инициализация игры
@@ -143,6 +149,16 @@ begin
         Result := 0;
 end;
 
+procedure PassMove(row,col : integer);
+begin
+  //  Передать ход в поток ошибок
+  if Streamer <> nil then 
+    begin
+      Streamer.SendMessage('Move%' + row.ToString + ' ' + col.ToString);
+      //writeln('Sended line : '+row.ToString + ' ' + col.ToString);
+    end;
+end;
+
 //  Ход компьютера - хитрый! 
 procedure ComputerMove;
 begin
@@ -155,6 +171,7 @@ begin
         if Winner = 2 then 
           begin
             DrawField;
+            PassMove(i,j);
             Window.Caption := 'Ха! Я победил!';
             exit;
           end;
@@ -170,6 +187,7 @@ begin
             DrawField;
             Window.Caption := 'Фиг вам!';
             field[i,j] := 2;
+            PassMove(i,j);
             DrawField;
             exit;
           end;
@@ -179,50 +197,104 @@ begin
   while field[r,c] <> 0 do
     (r,c) := Random2(1,N);
   field[r,c] := 2;
+  PassMove(r,c);
   DrawField;
 end;
 
 //  Ход игрока - тут только надо поставить крестик, нарисовать и проверить 
 //  на наличие победителя
-procedure PlayerMove(x,y : integer);
+procedure OpponentMove(x,y : integer);
 begin
   field[x,y] := 1;
-  if Winner = 0 then
+  var winnerCheck := Winner;
+  if winnerCheck = 0 then
     begin
       ComputerMove;
-      if Winner <> 0 then
+      winnerCheck := Winner;
+      if winnerCheck = 2 then
         begin
           gameState := GameStateEnum.Idle;
-          Window.Caption := 'Победил игрок';
-        end;
+          Streamer.SendMessage('WinGame');
+          Window.Caption := 'Победа!';
+        end
+       else
+         if winnerCheck = 3 then
+          begin
+            gameState := GameStateEnum.Idle;
+            Streamer.SendMessage('DrawGame');
+            Window.Caption := 'Ничья!';
+          end;
     end
   else
+    if winnerCheck = 1 then 
     begin
-      Window.Caption := 'Победил игрок';
+      Window.Caption := 'Победил соперник';
+      //  Отослать сообщение о победе
+      Streamer.SendMessage('FailGame');
+      gameState := GameStateEnum.Idle;
+    end
+    else
+    begin
+      Window.Caption := 'Ничья';
+      Streamer.SendMessage('DrawGame');
       gameState := GameStateEnum.Idle;
     end;
   DrawField;
 end;
 
-//  Реакция на нажатие мышки - координаты и норме кнопки
-procedure MouseClick(x,y:integer; mb : integer);
+procedure ParseMessage(message : string);
 begin
-  if gameState <> GameStateEnum.InProgress then exit;
-  var col := Floor(x / cellSize) + 1;
-  var row := Floor(y / cellSize) + 1;
-  if field[row,col] = 0 then
-    PlayerMove(row,col);
-  DrawField;
+  //writeln('Received line : ',s);
+  var arr := message.Split('%');
+  var command := arr[0];
+  //  Выбор по команде
+  case command of 
+    'Logout' : begin
+      Window.Caption := 'Отключены от сервера';
+      Streamer.StopReceiving;
+      gameState := GameStateEnum.Ended;
+    end;
+    
+    'StartFirst' : begin
+      Window.Caption := 'Играем';
+      InitGame;
+      ComputerMove;
+    end;
+
+    'StartSecond' : begin
+      Window.Caption := 'Играем';
+      InitGame;
+    end;
+    
+    'Move' : begin
+      var coord := arr[1].Split(' ');
+      OpponentMove(coord[0].ToInteger, coord[1].ToInteger);
+    end;
+    
+    'Score' : begin
+      score := arr[1].ToInteger;
+      DrawField;
+    end;
+    
+  end;
+
 end;
 
+
 begin
-  Window.SetSize(N*cellSize,N*cellSize);
+  Window.SetSize(N*cellSize,N*cellSize + 150);
 
   DrawField;
-  Window.CenterOnScreen;
-  OnMouseDown := MouseClick;
-  gameState := GameStateEnum.InProgress;
+  SetWindowPos(Random(ScreenWidth - Window.Width),Random(ScreenHeight-Window.Height));
   
-  
-  
+  Streamer := new StreamDirector(ParseMessage);
+  if CommandLineArgs.Length > 0 then
+    botName := CommandLineArgs[0]
+  else
+    botName := 'Unknown';
+    
+  Streamer.SendMessage('Login%' + botName + '%FourInRow');
+  Window.Caption := 'Игра : ' + botName;
+  DrawField;
+  gameState := GameStateEnum.Idle;
 end.
